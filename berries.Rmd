@@ -120,7 +120,7 @@ rberry %<>% mutate(pesticide = ifelse(rberry$D_right==rberry$DC_right_l, rberry$
 rberry %<>% select(-c(D_right, DC_right_l))
 
 rberry %<>% mutate(pesticide_type = ifelse(rberry$D_left==rberry$DC_left_l, rberry$D_left, NA))
-which(is.na(rberry$pesticide_type))
+#which(is.na(rberry$pesticide_type))
 
 rberry %<>% select(-c(D_left, DC_left_l))
 
@@ -156,12 +156,44 @@ rberry$label <- paste(rberry$lab1, rberry$lab2, sep = "")
 
 rberry$label <- ifelse(rberry$label=="ACRESHARVESTED", "ACRES HARVESTED", rberry$label)
 
-unique(rberry$label)
+#unique(rberry$label)
 
 rberry %<>% select(-c(lab1, lab2))
+
+rberry$label <- ifelse(rberry$label==" PRODUCTION", "PRODUCTION ", rberry$label)
+
+unique(rberry$label)
 ```
 
 ```{r}
-unique(rberry$meas)
+# create a new variable Measured that fixes issue of units being scattered across columns
+
+#unique(rberry$meas)
+rberry$Measure <- ifelse(startsWith(rberry$type, "MEASURED"), " MEASURED IN", rberry$meas)
+
+
+rberry$type <- ifelse(startsWith(rberry$type, "MEASURED"), "", rberry$type)
+
+rberry$Measures <- ifelse(startsWith(rberry$label, "LB"), paste(rberry$Measure, rberry$label, sep = " "), rberry$Measure)
+
+rberry$label <- ifelse(startsWith(rberry$label, "LB"), "", rberry$label)
+
+rberry %<>% select(-c(meas, Measure))
+
+rberry$Production <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), paste(rberry$Measures, rberry$label), rberry$label)
+
+rberry$Measures <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), "", rberry$Measures)
+#unique(rberry$Measures)
+
+rberry$Production <- ifelse(endsWith(rberry$Measures, "YIELD"), paste(rberry$Measures, rberry$label, sep = ""), rberry$label)
+
+rberry$Measures <- ifelse(endsWith(rberry$Measures, "YIELD"), "", rberry$Measures)
+unique(rberry$Measures)
+
+rberry$Measures <- ifelse(startsWith(rberry$what, "MEASURED IN"), paste(rberry$what, rberry$Measures, sep = ""), rberry$Measures)
+
+unique(rberry$Production)
+
+##This section is a mess ugh
 ```
 
