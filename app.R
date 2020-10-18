@@ -14,6 +14,7 @@ library(magrittr)
 library(kableExtra)
 library(dplyr)
 library(ggplot2)
+library(rsconnect)
 
 ag_data <- read_csv("berries.csv", col_names = TRUE)
 ag_data %>% summarize_all(n_distinct) -> aa
