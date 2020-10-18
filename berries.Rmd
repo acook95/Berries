@@ -180,20 +180,20 @@ rberry$label <- ifelse(startsWith(rberry$label, "LB"), "", rberry$label)
 
 rberry %<>% select(-c(meas, Measure))
 
-rberry$Production <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), paste(rberry$Measures, rberry$label), rberry$label)
+#rberry$Production <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), paste(rberry$Measures, rberry$label), rberry$label)
 
-rberry$Measures <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), "", rberry$Measures)
+#rberry$Measures <- ifelse(endsWith(rberry$Measures, "PRODUCTION"), "", rberry$Measures)
 #unique(rberry$Measures)
 
-rberry$Production <- ifelse(endsWith(rberry$Measures, "YIELD"), paste(rberry$Measures, rberry$label, sep = ""), rberry$label)
+#rberry$Production <- ifelse(endsWith(rberry$Measures, "YIELD"), paste(rberry$Measures, rberry$label, sep = ""), rberry$label)
 
-rberry$Measures <- ifelse(endsWith(rberry$Measures, "YIELD"), "", rberry$Measures)
-unique(rberry$Measures)
+#rberry$Measures <- ifelse(endsWith(rberry$Measures, "YIELD"), "", rberry$Measures)
+#unique(rberry$Measures)
 
-rberry$Measures <- ifelse(startsWith(rberry$what, "MEASURED IN"), paste(rberry$what, rberry$Measures, sep = ""), rberry$Measures)
+#rberry$Measures <- ifelse(startsWith(rberry$what, "MEASURED IN"), paste(rberry$what, #rberry$Measures, sep = ""), rberry$Measures)
 
-unique(rberry$Production)
+#unique(rberry$Production)
 
-##This section is a mess ugh
+
 ```
 

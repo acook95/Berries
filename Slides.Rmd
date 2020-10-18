@@ -1,0 +1,132 @@
+---
+title: "Berries Project"
+author: "Anna Cook"
+date: "10/19/2020"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(knitr)
+library(tidyverse)
+library(magrittr)
+library(kableExtra)
+library(dplyr)
+library(ggplot2)
+```
+
+## Introduction
+
+- Examining how different aspects of the production of raspberries is related to their value
+- Data collected from USDA database
+- Dataset contains info for 3 types of berries, but we are focused only on raspberries
+
+## Data Cleaning, Step 1
+
+Eliminate unnecessary variables. We are left with 8 variables of interest.
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ag_data <- read_csv("berries.csv", col_names = TRUE)
+ag_data %>% summarize_all(n_distinct) -> aa
+bb <- which(aa[1,]==1)
+cn <- colnames(ag_data)[bb]
+ag_data %<>% select(-all_of(bb))
+aa %<>% select(-all_of(bb)) 
+ag_data %<>% select(-4)
+aa %<>% select(-4) 
+kable(head(ag_data)) %>% kable_styling(font_size=12)
+```
+
+## Data Cleaning, Step 2
+
+Filter the data so it displays only raspberries for each year.
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry <- ag_data %>% filter((Commodity=="RASPBERRIES") & (Period=="YEAR"))
+rberry %<>% select(-c(Period, Commodity))
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+## Data Cleaning, Step 3
+
+Split, re-organize, and re-name the Data Item and Domain Category Variables so that they are more informative. Remove redundancy by removing Domain column. 
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry %<>% separate(`Data Item`, c("Type", "Production"), sep = "-")
+rberry %<>% separate(Type, c("Berry", "Type", "Market"), sep = ",")
+rberry %<>% separate(Production, c("Production", "Measure", "Average"), sep = ",")
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" PROCESSING ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" PROCESSING ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" UTILIZED ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" UTILIZED ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" FRESH MARKET ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" FRESH MARKET ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" NOT HARVESTED ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" NOT HARVESTED ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" NOT SOLD ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" NOT SOLD ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry %<>% separate(Domain, c("D_left", "D_right"), sep = ", ")
+rberry[is.na(rberry)] <- ""
+rberry$Chemical_Type <- ifelse(rberry$D_left=="FERTILIZER", rberry$D_left, rberry$D_right)
+rberry %<>% separate(`Domain Category`, c("DC_left", "DC_right"), sep = ":")
+rberry[is.na(rberry)] <- ""
+rberry %<>% rename(Chemicals = DC_right)
+rberry %<>% select(-c(D_left, D_right, DC_left, Berry, Average))
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+## Data Cleaning, Step 4
+
+Remove NA's from the Value column.
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## Remove NA's from Value
+rberry$Value <- ifelse(rberry$Value=="(D)", NA, rberry$Value)
+rberry[is.na(rberry)] <- ""
+rberry$Value <- ifelse(rberry$Value=="(NA)", NA, rberry$Value)
+rberry[is.na(rberry)] <- ""
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+The dataset is now clean and ready for EDA. 
+
+## Exploratory Data Analysis
+- Goal: visualize the data and look for any patterns or trends
+- For these analyses, only looking at values measured in lbs.
+- First step: Histograms of Year and Number of lbs
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry2 <- rberry %>% select(Year, State, Measure, Chemical_Type, Value)
+rberry2 %<>% filter(Measure==" MEASURED IN LB")
+rberry2$Value %<>% as.numeric()
+hist_yrs <- hist(rberry2$Year, xlab = "Year", main = "Histogram of Years")
+hist(rberry2$Value, xlab = "Number of LBs", main = "Histogram of Value (Measured in LB)")
+```
+
+## EDA
+- Second step: scatterplot of Chemical Type vs. LBs
+- points are jittered to avoid overlap
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = rberry2, mapping = aes(Chemical_Type,(Value))) + geom_jitter(aes(color = State)) + ggtitle("Scatterplot of Chemical Type vs. LBs produced") + xlab("Chemical Type") + ylab("Value in LBs")
+```
+
+## EDA
+- Third step: calculate mean number of lbs for various groups of observations
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+table1 <- rberry2 %>% group_by(State) %>% summarize(mean(Value, na.rm = TRUE))
+table2 <- rberry2 %>% group_by(Year) %>% summarize(mean(Value, na.rm = TRUE))
+table3 <- rberry2 %>% group_by(Chemical_Type) %>% summarise(mean(Value, na.rm = TRUE))
+kable(table1) %>% kable_styling(font_size = 8)
+kable(table2) %>% kable_styling(font_size = 8)
+kable(table3) %>% kable_styling(font_size = 8)
+```
+
+## Conclusions
+- Lots of NAs in the Value column
+- 2016 and 2018 don't have many observations
+- Distribution of lbs of raspberries is right-skewed
+- "Other" categories don't have any observations
+- No obvious patterns or trends in the data
+- Future analyses may look at other measurement units besides lbs
+

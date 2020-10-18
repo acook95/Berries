@@ -1,0 +1,135 @@
+---
+title: "Berries Report"
+author: "Anna Cook"
+date: "10/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(tidyverse)
+library(magrittr)
+library(kableExtra)
+library(dplyr)
+library(ggplot2)
+```
+
+## Introduction
+  The goal of this data analysis is to examine how different aspects of the farming of raspberries are related to the their value. The data was collected from a USDA database and contains a variety of information including production methods, chemicals used, etc. on three type of berries: raspberries, strawberries, and blueberries. For this analysis, raspberries were the only berry of interest. 
+
+
+## Data Cleaning
+  The data cleaning process consisted of several steps. The first step was to eliminate redundancy by removing any variables with only one unique value. This created 8 variables which are displayed below.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ag_data <- read_csv("berries.csv", col_names = TRUE)
+ag_data %>% summarize_all(n_distinct) -> aa
+bb <- which(aa[1,]==1)
+cn <- colnames(ag_data)[bb]
+ag_data %<>% select(-all_of(bb))
+aa %<>% select(-all_of(bb)) 
+ag_data %<>% select(-4)
+aa %<>% select(-4) 
+kable(head(ag_data)) %>% kable_styling(font_size=12)
+```
+
+
+Next, the dataset is filtered such that only raspberries are the only berry and years are the only period that are included. The columns "Commodity" and "Period" now contain only 1 unique value and can be eliminated from the dataset. 
+  
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry <- ag_data %>% filter((Commodity=="RASPBERRIES") & (Period=="YEAR"))
+rberry %<>% select(-c(Period, Commodity))
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+
+The next step was to clean up the Data Item, and Domain Category variables by splitting each into several columns. In total, these two variables were split into 8 new columns: Berry, Type, Market, Production, Measure, Average, Chemical_Type, and Chemicals. Berry and Average were eliminated because each contained only one unique value. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry %<>% separate(`Data Item`, c("Type", "Production"), sep = "-")
+rberry %<>% separate(Type, c("Berry", "Type", "Market"), sep = ",")
+rberry %<>% separate(Production, c("Production", "Measure", "Average"), sep = ",")
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" PROCESSING ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" PROCESSING ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" UTILIZED ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" UTILIZED ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" FRESH MARKET ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" FRESH MARKET ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" NOT HARVESTED ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" NOT HARVESTED ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry$Market <- ifelse(rberry$Type==" NOT SOLD ", paste(rberry$Type, rberry$Market, sep = ""), rberry$Market)
+rberry$Type <- ifelse(rberry$Type==" NOT SOLD ", NA, rberry$Type)
+rberry[is.na(rberry)] <- ""
+rberry %<>% separate(Domain, c("D_left", "D_right"), sep = ", ")
+rberry[is.na(rberry)] <- ""
+rberry$Chemical_Type <- ifelse(rberry$D_left=="FERTILIZER", rberry$D_left, rberry$D_right)
+rberry %<>% separate(`Domain Category`, c("DC_left", "DC_right"), sep = ":")
+rberry[is.na(rberry)] <- ""
+rberry %<>% rename(Chemicals = DC_right)
+rberry %<>% select(-c(D_left, D_right, DC_left, Berry, Average))
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+
+Finally, NA's were removed from the Value column. These were displayed in the original dataset as (D) and (NA). The cleaned dataset now includes information on raspberries for 5 years (2015-2019), 3+ states (California, Washington, Oregon, and "Other"), 4+ types of chemicals (Fungicide, Herbicide, Insecticide, Fertilizer, and "Other"), and various Production and Market information.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## Remove NA's from Value
+rberry$Value <- ifelse(rberry$Value=="(D)", NA, rberry$Value)
+rberry[is.na(rberry)] <- ""
+rberry$Value <- ifelse(rberry$Value=="(NA)", NA, rberry$Value)
+rberry[is.na(rberry)] <- ""
+kable(head(rberry)) %>% kable_styling(font_size = 12)
+```
+
+
+## Exploratory Data Analysis
+As mentioned previously, the goal of this analysis is to examine how the various aspects of the raspberries are related to the value. In more general terms, I am interested in simply visualizing the data and observing general trends that become apparent. The goal here was not to build any models or run any tests for significance, but rather to get a general sense of the dataset and what information we can gain from it. To this end, I began by generating a series of histograms and scatterplots to visualize the data. Below are two histograms displaying frequency data for years and pounds of raspberries produced. For the purpose of this EDA, I chose to focus on the value measured in LBs. For the following analyses, the dataset was filtered such that Measure == "MEASURED IN LB". 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rberry2 <- rberry %>% select(Year, State, Measure, Chemical_Type, Value)
+rberry2 %<>% filter(Measure==" MEASURED IN LB")
+rberry2$Value %<>% as.numeric()
+hist_yrs <- hist(rberry2$Year, xlab = "Year", main = "Histogram of Years")
+hist(rberry2$Value, xlab = "Number of LBs", main = "Histogram of Value (Measured in LB)")
+```
+
+
+Next, I created a scatterplot to display the relationship between the Chemical Type and the number of pounds of raspberries produced. The states are represented in colors. The points are jittered to avoid overlapping. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = rberry2, mapping = aes(Chemical_Type,(Value))) + geom_jitter(aes(color = State)) + ggtitle("Scatterplot of Chemical Type vs. LBs produced") + xlab("Chemical Type") + ylab("Value in LBs")
+```
+
+
+Finally, I calculated the average number of lbs of raspberries produced, summarized by state, year, and chemical type. The averages are displayed below. NA's were produced in groups that did not contain any value information. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+table1 <- rberry2 %>% group_by(State) %>% summarize(mean(Value, na.rm = TRUE))
+table2 <- rberry2 %>% group_by(Year) %>% summarize(mean(Value, na.rm = TRUE))
+table3 <- rberry2 %>% group_by(Chemical_Type) %>% summarise(mean(Value, na.rm = TRUE))
+
+kable(table1) %>% kable_styling(font_size = 12)
+kable(table2) %>% kable_styling(font_size = 12)
+kable(table3) %>% kable_styling(font_size = 12)
+```
+
+## Conclusion
+
+It is important to note that there are a lot of NAs in the Value column in this dataset. This can be seen both from the analyses and by looking at the cleaned dataset. This is an issue because Value is our outcome variable. It is important that we have a lot of observations for this variable in order for the dataset and our analyses to be informative. So we should keep this in mind as we make inferences based on the analyses. 
+
+From the histograms, we can see that there isn't much information from 2016 and 2018. In addition, the distribution for number of pounds of raspberries produced is right-skewed. 
+
+From the scatterplot, we can see that there is a small cluster of observations where no chemical was used in producing raspberries. However, there are also very few pounds of raspberries produced for these observations. In addition, it does not appear that there are any observations for the "Other" categories. That is, both Chemical Type "Other" and State "Other" have no points on the scatterplot. There are also no observations for Chemily Type Fertilizer. However, the points for the other three Chemical Types appear to be randomly dispersed with no clear pattern. 
+
+The three tables show the mean number of pounds for each state, year, and chemical type. From these values, it does not appear that there is a big difference between any of the years or Chemical Types. For State, Washington had the highest average number of pounds and Oregon showed the lowest. However, because these means were not compared using any kind of significance test, I cannot say whether these differences are statistically significant or not. 
+
+As mentioned previously, I chose to focus on the number of pounds for these analyses, but future analyses may look into other measurement units. Looking at other measurements may show fewer NAs in the Value, and give more insight into any patterns that appear in the data. 
+
+
