@@ -130,3 +130,19 @@ kable(table3) %>% kable_styling(font_size = 8)
 - No obvious patterns or trends in the data
 - Future analyses may look at other measurement units besides lbs
 
+## References
+1. Hadley Wickham, Romain François, Lionel Henry and Kirill Müller
+    (2020). dplyr: A Grammar of Data Manipulation. R package version
+    1.0.2. https://CRAN.R-project.org/package=dplyr
+2. Hao Zhu (2020). kableExtra: Construct Complex Table with 'kable' and
+    Pipe Syntax. R package version 1.2.1.
+    https://CRAN.R-project.org/package=kableExtra
+3. H. Wickham. ggplot2: Elegant Graphics for Data Analysis.
+    Springer-Verlag New York, 2016.
+4. Stefan Milton Bache and Hadley Wickham (2014). magrittr: A
+    Forward-Pipe Operator for R. R package version 1.5.
+    https://CRAN.R-project.org/package=magrittr
+5. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open
+    Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+6. Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report
+    Generation in R. R package version 1.29.

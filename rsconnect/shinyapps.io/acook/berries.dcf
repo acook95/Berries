@@ -1,0 +1,10 @@
+name: berries
+title:
+username:
+account: acook
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3044392
+bundleId: 3755951
+url: https://acook.shinyapps.io/berries/
+when: 1603062290.9138
